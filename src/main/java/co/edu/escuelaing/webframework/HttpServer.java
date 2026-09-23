@@ -13,6 +13,8 @@ public class HttpServer {
     private final Router router;
     private final StaticFileService staticFileService;
 
+    private boolean running = false;
+
     public HttpServer(Router router, String staticPath) {
         this.router = router;
         this.staticFileService = new StaticFileService(staticPath);
@@ -20,18 +22,38 @@ public class HttpServer {
 
     public void start(int port) throws IOException {
 
+        running = true;
+
         try (ServerSocket serverSocket = new ServerSocket(port)) {
 
             System.out.println("Server started on port " + port);
 
-            while (true) {
+            while (running) {
 
                 try (Socket clientSocket = serverSocket.accept()) {
 
                     handleClient(clientSocket);
+
+                } catch (java.net.SocketException e) {
+
+                    System.out.println(
+                            "Cliente cerró la conexión antes de completar la respuesta."
+                    );
+
+                } catch (IOException e) {
+
+                    System.out.println(
+                            "Error procesando la conexión: " + e.getMessage()
+                    );
                 }
             }
         }
+
+        System.out.println("Server stopped gracefully.");
+    }
+
+    public void stop() {
+        running = false;
     }
 
     private void handleClient(Socket clientSocket) throws IOException {

@@ -2,13 +2,10 @@ package co.edu.escuelaing.webframework;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class StaticFileService {
 
-    private String staticPath;
+    private final String staticPath;
 
     public StaticFileService(String staticPath) {
         this.staticPath = staticPath;
@@ -16,21 +13,35 @@ public class StaticFileService {
 
     public byte[] getFile(String requestPath) throws IOException {
 
+        if (requestPath == null || requestPath.isBlank()) {
+            return null;
+        }
+
+        if (requestPath.contains("..")) {
+            return null;
+        }
+
         String resourcePath = staticPath + requestPath;
 
         if (resourcePath.endsWith("/")) {
             resourcePath += "index.html";
         }
 
-        Path filePath = Paths.get(
-                "src/main/resources",
-                resourcePath.substring(1));
-
-        if (!Files.exists(filePath) || Files.isDirectory(filePath)) {
-            return null;
+        if (resourcePath.startsWith("/")) {
+            resourcePath = resourcePath.substring(1);
         }
 
-        return Files.readAllBytes(filePath);
+        try (InputStream inputStream =
+                     StaticFileService.class
+                             .getClassLoader()
+                             .getResourceAsStream(resourcePath)) {
+
+            if (inputStream == null) {
+                return null;
+            }
+
+            return inputStream.readAllBytes();
+        }
     }
 
     public String getContentType(String path) {
@@ -57,6 +68,10 @@ public class StaticFileService {
 
         if (path.endsWith(".gif")) {
             return "image/gif";
+        }
+
+        if (path.endsWith(".svg")) {
+            return "image/svg+xml";
         }
 
         return "application/octet-stream";

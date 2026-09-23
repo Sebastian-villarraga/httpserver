@@ -6,6 +6,8 @@ public class Application {
 
     public static void main(String[] args) throws Exception {
 
+        WebFramework.staticfiles("/webroot");
+
         WebFramework.get("/hello", (req, resp) -> {
 
             String name = req.getValue("name");
@@ -14,12 +16,28 @@ public class Application {
                 name = "world";
             }
 
-            return "Hello " + name;
+            String greetingPrefix = System.getenv()
+                    .getOrDefault("GREETING_PREFIX", "Hello");
+
+            return greetingPrefix + " " + name;
         });
 
         WebFramework.get("/pi", (req, resp) ->
                 String.valueOf(Math.PI));
 
-        WebFramework.start(8080);
+        String environment = System.getenv()
+                .getOrDefault("APP_ENV", "development");
+
+        if (environment.equals("development")) {
+
+            WebFramework.get("/shutdown", (req, resp) -> {
+
+                WebFramework.stop();
+
+                return "Server will stop after this response.";
+            });
+        }
+
+        WebFramework.start();
     }
 }
